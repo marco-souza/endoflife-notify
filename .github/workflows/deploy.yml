@@ -36,6 +36,6 @@ jobs:
         with:
           project: "endoflife-notify"
           entrypoint: "./main.ts"
-          root: ""
-          
-          
+          root: "."
+
+
