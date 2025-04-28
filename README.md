@@ -29,4 +29,12 @@ We can fetch data form the API calling `https://endoflife.date/api/nodejs.json`
 
 ```sh
 deno task start
+
+# subscribe
+curl http://localhost:8000/subscribe/nodejs -X POST -d '{
+  "version": 20,
+  "days_before_expire": 30,
+  "webhook_url": "http://localhost:8000/callback",
+  "webhook_secret": "super-secret"
+}'
 ```

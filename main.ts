@@ -8,7 +8,13 @@ import { config } from "#/config.ts";
 const app = new Hono();
 const kv = await Deno.openKv();
 
-app.get("/", (c) => c.text("Hello World!"));
+app.get("/", (c) =>
+  c.json({
+    "title": "Welcome to EOL notify",
+    "description":
+      "Use this API to get receive notifications when your dependencies are X days from expire",
+    "example": "https://github.com/marco-souza/endoflife-notify",
+  }));
 
 app.post("/callback", async (c) => {
   const body = await c.req.json();
@@ -61,7 +67,7 @@ app.post("/subscribe/:tech", async (c: Context) => {
     eol.eol.getTime() - body.days_before_expire * 24 * 60 * 60 * 1000,
   );
 
-  // INFO: enqueue notification
+  // FIXME: Deno queue has a limit of max 30 of delay
   const delay = notifyDate.getTime() - today.getTime();
 
   console.log(
