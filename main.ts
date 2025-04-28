@@ -62,7 +62,7 @@ app.post("/subscribe/:tech", async (c: Context) => {
   );
 
   // INFO: enqueue notification
-  const delay = Number(100) ?? notifyDate.getTime() - today.getTime();
+  const delay = notifyDate.getTime() - today.getTime();
 
   console.log(
     `Enqueueing notification for ${subscription.tech} ${subscription.version} in ${delay}ms`,
