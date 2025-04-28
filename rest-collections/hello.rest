@@ -1,0 +1,10 @@
+http://localhost:8000
+
+# curl options
+ --silent
+
+# headers
+Content-Type: application/json
+User-Agent: VRC
+
+GET /
