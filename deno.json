@@ -9,7 +9,9 @@
     "#/": "./"
   },
   "tasks": {
-    "start": "deno run --allow-net --allow-env main.ts"
+    "start": "deno run --allow-net --allow-env main.ts",
+    "encrypt": "pkg encrypt .env",
+    "decrypt": "pkg decrypt .env.gpg"
   },
   "compilerOptions": {
     "jsx": "precompile",
