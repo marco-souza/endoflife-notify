@@ -9,7 +9,7 @@
     "#/": "./"
   },
   "tasks": {
-    "start": "deno run --allow-net --allow-env main.ts",
+    "start": "deno run --allow-net --allow-env --unsafely-ignore-certificate-errors main.ts",
     "encrypt": "pkg encrypt .env",
     "decrypt": "pkg decrypt .env.gpg"
   },
