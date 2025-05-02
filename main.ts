@@ -4,9 +4,9 @@ import { apiClient } from "#/lib/endoflife.ts";
 import * as tg from "#/lib/telegram.ts";
 import { Subscription } from "#/entities/subscription.ts";
 import { config } from "#/config.ts";
+import { subscriptionService } from "#/services/subscription.ts";
 
 const app = new Hono();
-const kv = await Deno.openKv();
 
 app.get("/", (c) =>
   c.json({
@@ -52,54 +52,76 @@ app.post("/subscribe/:tech", async (c: Context) => {
     return c.json({ error: "Invalid subscription data" }, 400);
   }
 
-  const eol = await apiClient.singleCycleDetails(subscription); // TODO: cache results
+  await subscriptionService.addSubscription(subscription);
 
-  // if end of live already reached, return error
-  if (eol.eol === true) {
-    return c.json(
-      { error: "Cannot subscribe to an expired version!", eol },
-      404,
-    );
-  }
-
-  const today = new Date();
-  const notifyDate = new Date(
-    eol.eol.getTime() - body.days_before_expire * 24 * 60 * 60 * 1000,
-  );
-
-  // FIXME: Deno queue has a limit of max 30 of delay
-  const delay = notifyDate.getTime() - today.getTime();
-
-  console.log(
-    `Enqueueing notification for ${subscription.tech} ${subscription.version} in ${delay}ms`,
-  );
-
-  await kv.enqueue(subscription, { delay });
+  return c.json({
+    message: "Subscription added",
+    subscription,
+  });
 });
 
 Deno.serve(app.fetch);
 
-kv.listenQueue(async (msg) => {
-  const subscription = Subscription(msg);
-  if (subscription instanceof type.errors) {
-    console.error(subscription);
-    return;
-  }
+// cron job
+Deno.cron(
+  "Dayly Checks",
+  "* * * * *",
+  async () => {
+    const technologies = await subscriptionService.listTechnologies();
 
-  const { webhook_url } = subscription;
-  console.log(`Sending notification`, subscription);
+    for (const technology of technologies) {
+      const { tech, version } = technology;
+      const res = await apiClient.singleCycleDetails({ tech, version });
+      if (res.eol === true) {
+        console.log("Subscription expired", technology);
+        continue;
+      }
 
-  const res = await fetch(webhook_url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(subscription),
-  });
+      const { eol } = res;
+      const today = new Date();
 
-  if (!res.ok) {
-    const errorBody = await res.text();
-    console.error("Failed to send notification", errorBody);
-    return;
-  }
+      const subscriptions = await subscriptionService
+        .getSubscriptionByTechnology(
+          tech,
+          version,
+        );
+      if (!subscriptions) {
+        console.log("No subscriptions found for technology", tech, version);
+        continue;
+      }
 
-  console.log("Notification sent successfully", subscription);
-});
+      const toNotify = subscriptions.filter(({ days_before_expire }) => {
+        const diffInDays = Math.floor(
+          (eol.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+        );
+        console.log({ diffInDays, days_before_expire });
+        return (diffInDays <= days_before_expire);
+      });
+
+      await Promise.all(
+        toNotify.map(async (subscription) => {
+          const { webhook_url, webhook_secret } = subscription;
+          if (webhook_secret != config.webhookSecrets) {
+            console.log("Invalid webhook secret", subscription);
+            return;
+          }
+          const res = await fetch(webhook_url, {
+            method: "POST",
+            headers: {
+              "User-Agent": "eol-notify",
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${webhook_secret}`,
+            },
+            body: JSON.stringify(subscription),
+          });
+
+          if (!res.ok) {
+            console.log("Error sending notification", res.statusText);
+          } else {
+            console.log("Notification sent", res.statusText);
+          }
+        }),
+      );
+    }
+  },
+);

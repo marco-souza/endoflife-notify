@@ -5,7 +5,7 @@ import { db } from "#/services/db.ts";
 
 const TechVersion = type({
   tech: "string",
-  version: "string",
+  version: "number",
   subscriptions: "string[]",
 });
 

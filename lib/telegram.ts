@@ -13,9 +13,15 @@ class APIClient {
     url.searchParams.set("chat_id", chatId);
     url.searchParams.set("text", message);
 
+    console.log(`Sending message to ${chatId}: ${message}`);
+
     const response = await fetch(url, { method: "POST" });
     if (!response.ok) {
-      throw new Error(`Failed to send message: ${response.statusText}`);
+      const errorMessage =
+        `Error sending message to Telegram: ${response.status} ${response.statusText}`;
+      console.error(errorMessage);
+      console.warn(await response.text());
+      throw new Error(errorMessage);
     }
 
     const data = await response.json();
