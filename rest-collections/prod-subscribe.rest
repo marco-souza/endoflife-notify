@@ -1,0 +1,19 @@
+https://endoflife-notify.deno.dev
+
+# curl options
+ --silent
+
+# headers
+Content-Type: application/json
+User-Agent: VRC
+
+# path
+POST /subscribe/nodejs
+
+# body
+{
+  "version": 20,
+  "days_before_expire": 30,
+  "webhook_url": "http://localhost:8000/callback",
+  "webhook_secret": "super-secret"
+}

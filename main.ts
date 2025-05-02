@@ -63,9 +63,10 @@ app.post("/subscribe/:tech", async (c: Context) => {
 Deno.serve(app.fetch);
 
 // cron job
+const CRON_EXPR = Deno.env.get("PROD") ? "0 0 * * *" : "* * * * *";
 Deno.cron(
   "Dayly Checks",
-  "* * * * *",
+  CRON_EXPR,
   async () => {
     const technologies = await subscriptionService.listTechnologies();
 
@@ -94,7 +95,6 @@ Deno.cron(
         const diffInDays = Math.floor(
           (eol.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
         );
-        console.log({ diffInDays, days_before_expire });
         return (diffInDays <= days_before_expire);
       });
 
