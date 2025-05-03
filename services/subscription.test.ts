@@ -13,9 +13,16 @@ import { Database } from "@copilotz/dengo";
 
 // setup
 
-await Deno.remove("./test.db");
-const kv = await Deno.openKv("./test.db");
-export const db = new Database(kv);
+async function getDatabase() {
+  const kv = await Deno.openKv("./test.db");
+  const db = new Database(kv);
+  return {
+    db,
+    [Symbol.asyncDispose]: async () => {
+      await Deno.remove("./test.db");
+    },
+  };
+}
 
 const subscription = Subscription({
   tech: "node",
@@ -27,35 +34,40 @@ const subscription = Subscription({
 
 assertNotInstanceOf(subscription, type.errors);
 
-const subscriptionService = new SubscriptionService(db);
+{
+  await using ctx = await getDatabase();
 
-Deno.test("SubscriptionService: addSubscription should add a new subscription", async () => {
-  await subscriptionService.addSubscription(subscription);
+  const db = ctx.db;
+  const subscriptionService = new SubscriptionService(db);
 
-  const { tech, version } = subscription;
-  const technology = await db.collection<TechnologiesDocument>("technologies")
-    .findOne({ tech, version });
+  Deno.test("SubscriptionService: addSubscription should add a new subscription", async () => {
+    await subscriptionService.addSubscription(subscription);
 
-  assertNotEquals(technology, null);
-  assertEquals(technology!.subscriptions.length, 1);
-});
+    const { tech, version } = subscription;
+    const technology = await db.collection<TechnologiesDocument>("technologies")
+      .findOne({ tech, version });
 
-Deno.test("SubscriptionService: listTechnologies should return all technologies", async () => {
-  const technologies = await subscriptionService.listTechnologies();
+    assertNotEquals(technology, null);
+    assertEquals(technology!.subscriptions.length, 1);
+  });
 
-  assertEquals(Array.isArray(technologies), true);
-  assertEquals(technologies.length, 1);
-});
+  Deno.test("SubscriptionService: listTechnologies should return all technologies", async () => {
+    const technologies = await subscriptionService.listTechnologies();
 
-Deno.test("SubscriptionService: getSubscriptionByTechnology should return subscriptions for a given tech and version", async () => {
-  await subscriptionService.addSubscription(subscription);
+    assertEquals(Array.isArray(technologies), true);
+    assertEquals(technologies.length, 1);
+  });
 
-  const { tech, version } = subscription;
-  const subscriptions = await subscriptionService.getSubscriptionByTechnology(
-    tech,
-    version,
-  );
+  Deno.test("SubscriptionService: getSubscriptionByTechnology should return subscriptions for a given tech and version", async () => {
+    await subscriptionService.addSubscription(subscription);
 
-  assertNotEquals(subscriptions, null);
-  assertEquals(Array.isArray(subscriptions), true);
-});
+    const { tech, version } = subscription;
+    const subscriptions = await subscriptionService.getSubscriptionByTechnology(
+      tech,
+      version,
+    );
+
+    assertNotEquals(subscriptions, null);
+    assertEquals(Array.isArray(subscriptions), true);
+  });
+}
