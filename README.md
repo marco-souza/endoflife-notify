@@ -1,6 +1,6 @@
 # End of Life Notify
 
-![Deno](https://img.shields.io/badge/deno-v1.0.0-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Build](https://img.shields.io/badge/build-passing-brightgreen)
+![Deno](https://img.shields.io/badge/deno-v2.3.1-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Build](https://img.shields.io/badge/build-passing-brightgreen)
 
 ## Objective
 
