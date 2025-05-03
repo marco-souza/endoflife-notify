@@ -12,7 +12,7 @@ app.get("/", (c) =>
   c.json({
     "title": "Welcome to EOL notify",
     "description":
-      "Use this API to get receive notifications when your dependencies are X days from expire",
+      "Use this API to receive notifications when your dependencies are X days away from expiration",
     "example": "https://github.com/marco-souza/endoflife-notify",
   }));
 
